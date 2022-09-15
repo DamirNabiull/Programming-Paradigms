@@ -1,0 +1,10 @@
+#lang slideshow
+
+(define (binary-to-decimal bits)
+  (define (helper bits val multiplier)
+    (cond
+      [(empty? bits) val]
+      [(cons? bits) (helper bits (+ val (* multiplier (first bits))) (* multiplier 2))]
+      )
+    )
+  )
