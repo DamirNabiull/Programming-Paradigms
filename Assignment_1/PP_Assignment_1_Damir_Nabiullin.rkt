@@ -170,13 +170,15 @@
     [(first-element? expr) (and (equal? 'log (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
-; math-func? - a predicate that checks if an expression is exponentiation, cos, sin, tan, or log.
+; math-func? - a predicate that checks if an expression is sum, product, exponentiation, cos, sin, tan, or log.
 (define (math-func? expr)
   (or (exp? expr)
       (sin? expr)
       (cos? expr)
       (tan? expr)
-      (log? expr)))
+      (log? expr)
+      (sum? expr)
+      (product? expr)))
 
 ; log-derivative - a function that calculates a derivative for log using derivative function.
 (define (log-derivative expr resp)
@@ -247,6 +249,54 @@
     [(log? expr) (log-derivative expr resp)]
     [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
+(define (root? expr)
+  (andmap (lambda (x) (unit? x)) (rest expr)))
+
+(define (combiner args symbol)
+    (cond
+      [(equal? (length args) 1) (first args)]
+      [else (cons symbol args)]))
+
+(define (combine-nums expr)
+  (cond
+    [(not (or (sum? expr) (product? expr))) (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
+    [(empty? (filter number? (rest expr))) empty]
+    [(sum? expr) (list (apply + (filter number? (rest expr))))]
+    [(product? expr) (list (apply * (filter number? (rest expr))))]))
+
+(define (get-vars expr)
+  (cond
+    [(or (sum? expr) (product? expr)) (filter (lambda (x) (not (number? x))) (rest expr))]
+    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]))
+
+(define (simplify-at-root expr)
+  ((lambda (nums vars) (cond
+                         [(not (or (sum? expr) (product? expr))) (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
+                         [(empty? nums)(combiner vars (first expr))]
+                         [(empty? vars) (first nums)]
+                         [(equal? (first nums) 0)
+                          (cond
+                            [(sum? expr) (combiner vars (first expr))]
+                            [(product? expr) 0])]
+                         [(and (equal? (first nums) 1) (product? expr)) (combiner vars (first expr))]
+                         [else (cons (first expr)(append nums vars))]))
+   (combine-nums expr)
+   (get-vars expr)))
 
 
 
+(simplify-at-root '(* 1 x y z))
+(simplify-at-root '(* 1 2))
+(simplify-at-root '(* x y z))
+(simplify-at-root '(* 1 2 3 x y z))
+(simplify-at-root '(* 1 x))
+(simplify-at-root '(* 1 2 3 x y z 0))
+(simplify-at-root '(+ 1 x y z))
+(simplify-at-root '(+ 1 2))
+(simplify-at-root '(+ x y z))
+(simplify-at-root '(+ 1 2 3 x y z))
+(simplify-at-root '(+ 1 x))
+(simplify-at-root '(+ 0 0 0 x y z 0))
+
+(define (simplify expr)
+  (simplify-at-root (map simplify-at-root (rest expr))))

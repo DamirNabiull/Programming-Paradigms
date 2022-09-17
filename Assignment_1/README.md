@@ -19,7 +19,7 @@
 1. **(log? \<expr\>) -> boolean?**
    - A predicate that checks if an expression is log.
 1. **(math-func? \<expr\>) -> boolean?**
-   - A predicate that checks if an expression is exponentiation, cos, sin, tan, or log.
+   - A predicate that checks if an expression is sum, product, exponentiation, cos, sin, tan, or log.
 1. **(first-element? \<expr\>) -> boolean?**
    - A predicate that checks if an expression is list and has at least one element.
 1. **(second-element? \<expr\>) -> boolean?**
