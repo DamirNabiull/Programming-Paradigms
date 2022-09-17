@@ -11,7 +11,9 @@
     [else #f]))
 
 ; TASK 1
-; SUBTASK 1
+
+
+; ********************************************        SUBTASK 1        ******************************************************************************
 (define (variable? expr)
   (cond
     [(and (symbol? expr)
@@ -49,23 +51,29 @@
     [(and (product? expr) (>= (length expr) 3)) (third expr)]
     [else (error "Expected a product expression of the form '(* <expr> <expr> ...), but got: " expr)]))
 
+; ********************************************        SUBTASK 2        ******************************************************************************
+; ***********************      !!! The complete derivative function is represented in SUBTASK 7      ************************************************
 
+; DESCRIPTION
+; Here you can see the solution for only 2 functions (sum and product) and 2 arguments accepted by this functions.
 
-; SUBTASK 2
-(define (is-unit? val)
+; unit? - a predicate that checks if an expression is variable or number.
+(define (unit? val)
   (or (variable? val) (number? val)))
 
+; unit-derivative - method is used to find a derivative of a variable or a number with respect to resp.
 (define (unit-derivative val resp)
   (cond
     [(and (variable? val)(equal? val resp)) 1]
-    [(is-unit? val) 0]
+    [(unit? val) 0]
     [else (error "Expected an unit (a variable or a number), but got: " val)]))
 
-; check if resp is variable else error
+; derivative-old - recursive function that computes a symbolic derivative of a given expression with respect to a given variable.
+; At this step function works only with sum and product. Moreover, sum and product accepts only two arguments at this step.
 (define (derivative-old expr resp)
   (cond
     [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
-    [(is-unit? expr) (unit-derivative expr resp)]
+    [(unit? expr) (unit-derivative expr resp)]
     [(sum? expr) (list '+
                        (derivative-old (summand-1 expr) resp)
                        (derivative-old (summand-2 expr) resp))]
@@ -76,72 +84,131 @@
                                  (derivative-old (multiplier-2 expr) resp)))]
     [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
-; SUBTASK 3
+; ********************************************        SUBTASK 3        ******************************************************************************
 (define (simplify-root-sum a b)
   (cond
     [(and (number? a) (number? b)) (+ a b)]
     [(equal? a 0) b]
     [(equal? b 0) a]
-    [(and (is-unit? a) (is-unit? b)) (list '+ a b)]
+    [(and (unit? a) (unit? b)) (list '+ a b)]
     [else (error "Error simplify-root-sum")]))
 
-;(define (simplify-at-root expr)
- ; (cond))
+; ********************************************        SUBTASK 5        ******************************************************************************
+
+; DESCRIPTION
+; Here you can see the to-infix function.
+; I made this function in such way that it works for exponentiation from SUBTASK 6 and for unlimited number of arguments.
+
+; infix-add-symbol - function that is part of to-infix function.
+; This function implements the insertion of an operation symbols between the arguments of expressions using.
+; Moreover, infix-add-symbol calls to-infix function to infix arguments itself.
+; I MADE THIS FUNCTION ONLY TO MAKE THE CODE EASIER TO READ. I MOVED THIS PART OF CODE FROM to-infix FUNCTION AS IT BECOME REALLY HARD TO READ.
+(define (infix-add-symbol expr symbol)
+  (define (helper)
+    (foldl (lambda (x current)
+             (append (list (to-infix x)
+                           symbol)
+                     current))
+           empty
+           (rest expr)))
+  (cond
+    [(or (sum? expr) (product? expr) (exp? expr)) (rest (reverse (helper)))]
+    [else (error "Expected [a sum] or [a product] or [an exponentiation] expression of the form '(+ <expr> <expr> ...) or '(* <expr> <expr> ...) or '(^ <expr> <expr>) respectively, but got: " expr)]))
+
+; to-infix - recursive function that calls infix-add-symbol to infix an operation symbols.
+; THIS FUNCTION IS RECURSIVE BECAUSE IT CALLS A FUNCTION THAT CALLS A to-infix FUNCTION.
+(define (to-infix expr)
+  (cond
+    [(unit? expr) expr]
+    [(exp? expr) (infix-add-symbol expr '^)]
+    [(math-func? expr) expr]
+    [(sum? expr) (infix-add-symbol expr '+)]
+    [(product? expr) (infix-add-symbol expr '*)]
+    [else (error "Expected a sum or a product expression of the form '(+ <expr> <expr> ...) or '(* <expr> <expr> ...) respectively, but got: " expr)]))
 
 
-; SUBTASK 6
+; ********************************************        SUBTASK 6        ******************************************************************************
+; ***********************      !!! The complete derivative and simplify functions are represented in SUBTASK 7      ************************************************
+
+; DESCRIPTION
+; In this SUBTASK I made helper functions for later use in SUBTASK 7
+; This functions are necessary to implement derivatives of exponentiation, cos, sin, tan, and log. 
+
+; exp? - a predicate that checks if an expression is exponentiation.
 (define (exp? expr)
   (cond
     [(first-element? expr) (and (equal? '^ (first expr)) (equal? (length expr) 3))]
     [else #f]))
 
+; sin? - a predicate that checks if an expression is sin.
 (define (sin? expr)
   (cond
     [(first-element? expr) (and (equal? 'sin (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
+; cos? - a predicate that checks if an expression is cos.
 (define (cos? expr)
   (cond
     [(first-element? expr) (and (equal? 'cos (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
+; tan? - a predicate that checks if an expression is tan.
 (define (tan? expr)
   (cond
     [(first-element? expr) (and (equal? 'tan (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
+; log? - a predicate that checks if an expression is log.
 (define (log? expr)
   (cond
     [(first-element? expr) (and (equal? 'log (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
-(define (log-derivative expr resp derivative-func)
+; math-func? - a predicate that checks if an expression is exponentiation, cos, sin, tan, or log.
+(define (math-func? expr)
+  (or (exp? expr)
+      (sin? expr)
+      (cos? expr)
+      (tan? expr)
+      (log? expr)))
+
+; log-derivative - a function that calculates a derivative for log using derivative function.
+(define (log-derivative expr resp)
   (cond
-    [(log? expr) (list '* (list '^ (second expr) -1) (derivative-func (second expr) resp))]
+    [(log? expr) (list '* (list '^ (second expr) -1) (derivative (second expr) resp))]
     [else (error "Expected a log expression of the form '(log <expr>), but got: " expr)]))
 
-(define (exp-derivative expr resp derivative-func)
+; exp-derivative - a function that calculates a derivative for exponentiation using derivative function.
+(define (exp-derivative expr resp)
   (cond
-    [(exp? expr) (list '* (list '^ (second expr) (third expr)) (derivative-func (list '* (list 'log (second expr)) (third expr)) resp))]
+    [(exp? expr) (list '* (list '^ (second expr) (third expr)) (derivative (list '* (list 'log (second expr)) (third expr)) resp))]
     [else (error "Expected an exponentiation expression of the form '(^ <expr> <expr>), but got: " expr)]))
 
-(define (sin-derivative expr resp derivative-func)
+; sin-derivative - a function that calculates a derivative for sin using derivative function.
+(define (sin-derivative expr resp)
   (cond
-    [(sin? expr) (list '* (list 'cos (second expr)) (derivative-func (second expr) resp))]
+    [(sin? expr) (list '* (list 'cos (second expr)) (derivative (second expr) resp))]
     [else (error "Expected a sin expression of the form '(sin <expr>), but got: " expr)]))
 
-(define (cos-derivative expr resp derivative-func)
+; cos-derivative - a function that calculates a derivative for cos using derivative function.
+(define (cos-derivative expr resp)
   (cond
-    [(cos? expr) (list '* '-1 (list 'sin (second expr)) (derivative-func (second expr) resp))]
+    [(cos? expr) (list '* '-1 (list 'sin (second expr)) (derivative (second expr) resp))]
     [else (error "Expected a cos expression of the form '(cos <expr>), but got: " expr)]))
 
-(define (tan-derivative expr resp derivative-func)
+; tan-derivative - a function that calculates a derivative for tan using derivative function.
+(define (tan-derivative expr resp)
   (cond
-    [(tan? expr) (list '* (list '^ (list 'cos (second expr)) -2)(derivative-func (second expr) resp))]
+    [(tan? expr) (list '* (list '^ (list 'cos (second expr)) -2)(derivative (second expr) resp))]
     [else (error "Expected a tan expression of the form '(tan <expr>), but got: " expr)]))
 
-; SUBTASK 7
-(define (convert-multiplication expr resp derivative-func)
+; ********************************************        SUBTASK 7        ******************************************************************************
+
+; convert-multiplication - a function that helps to differentiate product using derivative function.
+; Example:
+; (* x y z ...) -> (+ (* (derivative x) y z ...) (* x (derivative y) z ...) (* x y (derivative z) ...) ...)
+; THIS FUNCTION CALLS THE derivative FUNCTION.
+(define (convert-multiplication expr resp)
   (define (helper prev expr ans)
     (cond
       [(empty? expr) (cons '+ ans)]
@@ -149,30 +216,34 @@
                     (rest expr)
                     (append ans
                             (list (append (cons '* prev)
-                                          (append (list (derivative-func (first expr) resp))
+                                          (append (list (derivative (first expr) resp))
                                                   (rest expr))))))]))
   (cond
     [(product? expr) (helper empty (rest expr) empty)]
     [else (error "Expected a product expression of the form '(* <expr> ...), but got: " expr)]))
 
-(define (convert-sum expr resp derivative-func)
+; convert-sum - a function that helps to differentiate sum using derivative function.
+; THIS FUNCTION CALLS THE derivative FUNCTION.
+(define (convert-sum expr resp)
   (cond
     [(sum? expr) (cons '+ (map (lambda (x)
-                                 (derivative-func x resp))
+                                 (derivative x resp))
                                (rest expr)))]
     [else (error "Expected a sum expression of the form '(+ <expr> ...), but got: " expr)]))
 
+; derivative - a function that differentiate given expression with respect to resp.
+; THIS FUNCTION IS RECURSIVE BECAUSE IT CALLS FUNCTIONS THAT CALLS A derivative FUNCTION.
 (define (derivative expr resp)
   (cond
     [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
-    [(is-unit? expr) (unit-derivative expr resp)]
-    [(sum? expr) (convert-sum expr resp derivative)]
-    [(product? expr) (convert-multiplication expr resp derivative)]
-    [(exp? expr) (exp-derivative expr resp derivative)]
-    [(sin? expr) (sin-derivative expr resp derivative)]
-    [(cos? expr) (cos-derivative expr resp derivative)]
-    [(tan? expr) (tan-derivative expr resp derivative)]
-    [(log? expr) (log-derivative expr resp derivative)]
+    [(unit? expr) (unit-derivative expr resp)]
+    [(sum? expr) (convert-sum expr resp)]
+    [(product? expr) (convert-multiplication expr resp)]
+    [(exp? expr) (exp-derivative expr resp)]
+    [(sin? expr) (sin-derivative expr resp)]
+    [(cos? expr) (cos-derivative expr resp)]
+    [(tan? expr) (tan-derivative expr resp)]
+    [(log? expr) (log-derivative expr resp)]
     [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
 
