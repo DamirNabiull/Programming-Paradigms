@@ -113,11 +113,36 @@
     [(first-element? expr) (and (equal? 'log (first expr)) (equal? (length expr) 2))]
     [else #f]))
 
+(define (log-derivative expr resp derivative-func)
+  (cond
+    [(log? expr) (list '* (list '^ (second expr) -1) (derivative-func (second expr) resp))]
+    [else (error "Expected a log expression of the form '(log <expr>), but got: " expr)]))
 
+(define (exp-derivative expr resp derivative-func)
+  (cond
+    [(exp? expr) (list '* (list '^ (second expr) (third expr)) (derivative-func (list '* (list 'log (second expr)) (third expr)) resp))]
+    [else (error "Expected an exponentiation expression of the form '(^ <expr> <expr>), but got: " expr)]))
+
+(define (sin-derivative expr resp derivative-func)
+  (cond
+    [(sin? expr) (list '* (list 'cos (second expr)) (derivative-func (second expr) resp))]
+    [else (error "Expected a sin expression of the form '(sin <expr>), but got: " expr)]))
+
+(define (cos-derivative expr resp derivative-func)
+  (cond
+    [(cos? expr) (list '* '-1 (list 'sin (second expr)) (derivative-func (second expr) resp))]
+    [else (error "Expected a cos expression of the form '(cos <expr>), but got: " expr)]))
+
+(define (tan-derivative expr resp derivative-func)
+  (cond
+    [(tan? expr) (list '* (list '^ (list 'cos (second expr)) -2)(derivative-func (second expr) resp))]
+    [else (error "Expected a tan expression of the form '(tan <expr>), but got: " expr)]))
+
+; (append '(* (^ e1 e2)) (list (derivative-new '(+ x y) 'x)))
 
 ; SUBTASK 7
 ; ADD COS SIN etc.
-(define (convert-multiplication expr resp der-func)
+(define (convert-multiplication expr resp derivative-func)
   (define (helper prev expr ans)
     (cond
       [(empty? expr) (cons '+ ans)]
@@ -125,7 +150,7 @@
                     (rest expr)
                     (append ans
                             (list (append (cons '* prev)
-                                          (append (list (der-func (first expr) resp))
+                                          (append (list (derivative-func (first expr) resp))
                                                   (rest expr))))))]))
   (helper empty (rest expr) empty))
 
@@ -140,7 +165,13 @@
     [(empty? expr) empty]
     [(is-unit? expr) (unit-derivative expr resp)]
     [(sum? expr) (convert-sum expr resp derivative-new)]
-    [(product? expr) (convert-multiplication expr resp derivative-new)]))
+    [(product? expr) (convert-multiplication expr resp derivative-new)]
+    [(exp? expr) (exp-derivative expr resp derivative-new)]
+    [(sin? expr) (sin-derivative expr resp derivative-new)]
+    [(cos? expr) (cos-derivative expr resp derivative-new)]
+    [(tan? expr) (tan-derivative expr resp derivative-new)]
+    [(log? expr) (log-derivative expr resp derivative-new)]
+    [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...), but got: " expr)]))
 
 
 
