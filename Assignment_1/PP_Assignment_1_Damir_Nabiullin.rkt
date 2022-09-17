@@ -58,21 +58,23 @@
 (define (unit-derivative val resp)
   (cond
     [(and (variable? val)(equal? val resp)) 1]
-    [(is-unit? val) 0]))
-; add error checking
+    [(is-unit? val) 0]
+    [else (error "Expected an unit (a variable or a number), but got: " val)]))
 
 ; check if resp is variable else error
-(define (derivative expr resp)
+(define (derivative-old expr resp)
   (cond
+    [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
     [(is-unit? expr) (unit-derivative expr resp)]
     [(sum? expr) (list '+
-                       (derivative (summand-1 expr) resp)
-                       (derivative (summand-2 expr) resp))]
+                       (derivative-old (summand-1 expr) resp)
+                       (derivative-old (summand-2 expr) resp))]
     [(product? expr) (list '+
-                           (list '* (derivative (multiplier-1 expr) resp)
+                           (list '* (derivative-old (multiplier-1 expr) resp)
                                     (multiplier-2 expr))
                            (list '* (multiplier-1 expr)
-                                 (derivative (multiplier-2 expr) resp)))]))
+                                 (derivative-old (multiplier-2 expr) resp)))]
+    [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
 ; SUBTASK 3
 (define (simplify-root-sum a b)
@@ -138,10 +140,7 @@
     [(tan? expr) (list '* (list '^ (list 'cos (second expr)) -2)(derivative-func (second expr) resp))]
     [else (error "Expected a tan expression of the form '(tan <expr>), but got: " expr)]))
 
-; (append '(* (^ e1 e2)) (list (derivative-new '(+ x y) 'x)))
-
 ; SUBTASK 7
-; ADD COS SIN etc.
 (define (convert-multiplication expr resp derivative-func)
   (define (helper prev expr ans)
     (cond
@@ -152,26 +151,29 @@
                             (list (append (cons '* prev)
                                           (append (list (derivative-func (first expr) resp))
                                                   (rest expr))))))]))
-  (helper empty (rest expr) empty))
+  (cond
+    [(product? expr) (helper empty (rest expr) empty)]
+    [else (error "Expected a product expression of the form '(* <expr> ...), but got: " expr)]))
 
 (define (convert-sum expr resp derivative-func)
-  (cons '+
-        (map (lambda (x)
-               (derivative-func x resp))
-             (rest expr))))
-
-(define (derivative-new expr resp)
   (cond
-    [(empty? expr) empty]
+    [(sum? expr) (cons '+ (map (lambda (x)
+                                 (derivative-func x resp))
+                               (rest expr)))]
+    [else (error "Expected a sum expression of the form '(+ <expr> ...), but got: " expr)]))
+
+(define (derivative expr resp)
+  (cond
+    [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
     [(is-unit? expr) (unit-derivative expr resp)]
-    [(sum? expr) (convert-sum expr resp derivative-new)]
-    [(product? expr) (convert-multiplication expr resp derivative-new)]
-    [(exp? expr) (exp-derivative expr resp derivative-new)]
-    [(sin? expr) (sin-derivative expr resp derivative-new)]
-    [(cos? expr) (cos-derivative expr resp derivative-new)]
-    [(tan? expr) (tan-derivative expr resp derivative-new)]
-    [(log? expr) (log-derivative expr resp derivative-new)]
-    [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...), but got: " expr)]))
+    [(sum? expr) (convert-sum expr resp derivative)]
+    [(product? expr) (convert-multiplication expr resp derivative)]
+    [(exp? expr) (exp-derivative expr resp derivative)]
+    [(sin? expr) (sin-derivative expr resp derivative)]
+    [(cos? expr) (cos-derivative expr resp derivative)]
+    [(tan? expr) (tan-derivative expr resp derivative)]
+    [(log? expr) (log-derivative expr resp derivative)]
+    [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
 
 
