@@ -1,19 +1,22 @@
 #lang slideshow
 ; HELPERS
+; first-element? - a predicate that checks if an expression is list and has at least one element.
 (define (first-element? expr)
   (cond
     [(and (list? expr) (not (empty? expr))) #t]
     [else #f]))
 
+; second-element? - a predicate that checks if an expression is list and has at least two elements.
 (define (second-element? expr)
   (cond
     [(and (list? expr) (>= (length expr) 2)) #t]
     [else #f]))
 
-; TASK 1
 
 
 ; ********************************************        SUBTASK 1        ******************************************************************************
+
+; variable? - a predicate that checks if an expression is variable.
 (define (variable? expr)
   (cond
     [(and (symbol? expr)
@@ -21,35 +24,42 @@
           (not (equal? expr '*))) #t]
     [else #f]))
 
+; sum? - a predicate that checks if an expression is sum.
 (define (sum? expr)
   (cond
     [(second-element? expr) (equal? '+ (first expr))]
     [else #f]))
 
+; summand-1 - a function that return first summand of the expression.
 (define (summand-1 expr)
   (cond
     [(sum? expr) (second expr)]
     [else (error "Expected a sum expression of the form '(+ <expr> ...), but got: " expr)]))
 
+; summand-2 - a function that return second summand of the expression.
 (define (summand-2 expr)
   (cond
     [(and (sum? expr) (>= (length expr) 3)) (third expr)]
     [else (error "Expected a sum expression of the form '(+ <expr> <expr> ...), but got: " expr)]))
 
+; product? - a predicate that checks if an expression is product.
 (define (product? expr)
   (cond
     [(second-element? expr) (and (equal? '* (first expr)) (>= (length expr) 3))]
     [else #f]))
 
+; multiplier-1 - a function that return first multiplier of the expression.
 (define (multiplier-1 expr)
   (cond
     [(product? expr) (second expr)]
     [else (error "Expected a product expression of the form '(* <expr> ...), but got: " expr)]))
 
+; multiplier-2 - a function that return second multiplier of the expression.
 (define (multiplier-2 expr)
   (cond
     [(and (product? expr) (>= (length expr) 3)) (third expr)]
     [else (error "Expected a product expression of the form '(* <expr> <expr> ...), but got: " expr)]))
+
 
 ; ********************************************        SUBTASK 2        ******************************************************************************
 ; ***********************      !!! The complete derivative function is represented in SUBTASK 7      ************************************************
@@ -61,15 +71,14 @@
 (define (unit? val)
   (or (variable? val) (number? val)))
 
-; unit-derivative - method is used to find a derivative of a variable or a number with respect to resp.
+; unit-derivative - a function that is used to find a derivative of a variable or a number with respect to resp.
 (define (unit-derivative val resp)
   (cond
     [(and (variable? val)(equal? val resp)) 1]
     [(unit? val) 0]
     [else (error "Expected an unit (a variable or a number), but got: " val)]))
 
-; derivative-old - recursive function that computes a symbolic derivative of a given expression with respect to a given variable.
-; At this step function works only with sum and product. Moreover, sum and product accepts only two arguments at this step.
+; derivative-old - a recursive function that computes a symbolic derivative of a given expression with respect to a given variable.
 (define (derivative-old expr resp)
   (cond
     [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
@@ -99,10 +108,8 @@
 ; Here you can see the to-infix function.
 ; I made this function in such way that it works for exponentiation from SUBTASK 6 and for unlimited number of arguments.
 
-; infix-add-symbol - function that is part of to-infix function.
-; This function implements the insertion of an operation symbols between the arguments of expressions using.
-; Moreover, infix-add-symbol calls to-infix function to infix arguments itself.
-; I MADE THIS FUNCTION ONLY TO MAKE THE CODE EASIER TO READ. I MOVED THIS PART OF CODE FROM to-infix FUNCTION AS IT BECOME REALLY HARD TO READ.
+; infix-add-symbol - a function that is part of to-infix function.
+; This function implements the insertion of an operation symbols between the arguments of expressions.
 (define (infix-add-symbol expr symbol)
   (define (helper)
     (foldl (lambda (x current)
@@ -115,8 +122,7 @@
     [(or (sum? expr) (product? expr) (exp? expr)) (rest (reverse (helper)))]
     [else (error "Expected [a sum] or [a product] or [an exponentiation] expression of the form '(+ <expr> <expr> ...) or '(* <expr> <expr> ...) or '(^ <expr> <expr>) respectively, but got: " expr)]))
 
-; to-infix - recursive function that calls infix-add-symbol to infix an operation symbols.
-; THIS FUNCTION IS RECURSIVE BECAUSE IT CALLS A FUNCTION THAT CALLS A to-infix FUNCTION.
+; to-infix - a recursive function that infix an operation symbols.
 (define (to-infix expr)
   (cond
     [(unit? expr) expr]
@@ -205,9 +211,6 @@
 ; ********************************************        SUBTASK 7        ******************************************************************************
 
 ; convert-multiplication - a function that helps to differentiate product using derivative function.
-; Example:
-; (* x y z ...) -> (+ (* (derivative x) y z ...) (* x (derivative y) z ...) (* x y (derivative z) ...) ...)
-; THIS FUNCTION CALLS THE derivative FUNCTION.
 (define (convert-multiplication expr resp)
   (define (helper prev expr ans)
     (cond
@@ -223,7 +226,6 @@
     [else (error "Expected a product expression of the form '(* <expr> ...), but got: " expr)]))
 
 ; convert-sum - a function that helps to differentiate sum using derivative function.
-; THIS FUNCTION CALLS THE derivative FUNCTION.
 (define (convert-sum expr resp)
   (cond
     [(sum? expr) (cons '+ (map (lambda (x)
@@ -231,8 +233,7 @@
                                (rest expr)))]
     [else (error "Expected a sum expression of the form '(+ <expr> ...), but got: " expr)]))
 
-; derivative - a function that differentiate given expression with respect to resp.
-; THIS FUNCTION IS RECURSIVE BECAUSE IT CALLS FUNCTIONS THAT CALLS A derivative FUNCTION.
+; derivative - a recursive function that differentiate given expression with respect to resp.
 (define (derivative expr resp)
   (cond
     [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: " resp)]
