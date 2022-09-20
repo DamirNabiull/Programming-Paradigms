@@ -125,8 +125,18 @@
 1. **(derivative \<expr\> \<resp\>) -> list?**
    - A recursive function that differentiate given expression *expr* with respect to *resp*.
    - This function goes through all arguments of sum using *map* and calculate derivative of each argument using *derivative* function.
-1. **(simplify \<expr\> \<resp\>) -> list?**
+1. **(simplify \<expr\>) -> any/c**
    - A recursive function that simplifies given expression *expr*.
    - This function goes through expression's arguments, simplifies them, and simplifies expression itself completly.
    - I used map to go through all arguments of expression.
+   - This function can return number, variable or a list.
    - Simplifies only sum and product, other acceptable functions just returned.
+1. **(insert \<val\> \<ans\>) -> list?**
+   - A recursive function that represents insertion sort (insert *val* to *ans*).
+   - This function checks if *val* is list or variable. If *val* is variable - than it checks if *ans* contains such variable or not and adds it (if necessary). If *val* is list - than function makes recursive call for *val*.
+1. **(variables-of \<expr\>) -> list?**
+   - A function that returns sorted list of distinct variables used in a given expression.
+   - This function uses *foldl* to go through all arguments of given exression and apply *insert* function to them.
+1. **(gradient \<expr\> \<resp\>) -> list?**
+   - A function that calculates a gradient of a multivariable expression.
+   - This function uses *map* through *resp* - list of variables. And applies *derivative* for *expr* with respect to each element of *resp*.
