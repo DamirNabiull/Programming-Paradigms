@@ -1,5 +1,8 @@
 #lang slideshow
+; Damir Nabiullin 20.09.2022
+
 ; HELPERS
+
 ; first-element? - a predicate that checks if an expression is list and has at least one element.
 (define (first-element? expr)
   (cond
@@ -12,23 +15,49 @@
     [(and (list? expr) (>= (length expr) 2)) #t]
     [else #f]))
 
+; third-element? - a predicate that checks if an expression is list and has at least three elements.
+(define (third-element? expr)
+  (cond
+    [(and (list? expr) (>= (length expr) 3)) #t]
+    [else #f]))
+
+; math-func? - a predicate that checks if an expression is sum, product, exponentiation, cos, sin, tan, or log.
+(define (math-func? expr)
+  (or (exp? expr)
+      (sin? expr)
+      (cos? expr)
+      (tan? expr)
+      (log? expr)
+      (sum? expr)
+      (product? expr)))
+
+; acceptable-value? - a predicate that checks if an expression is acceptable by task description.
+(define (acceptable-value? expr)
+  (or (unit? expr) (math-func? expr)))
+
+; acceptable-values? - a predicate that checks if an expression has values and expressions in acceptable form.
+(define (acceptable-values? expr)
+  (cond
+    [(list? expr) (andmap acceptable-value? (rest expr))]
+    [else (error "Expected a list, but got: " expr)]))
 
 
 ; ********************************************        SUBTASK 1        ******************************************************************************
 
 ; variable? - a predicate that checks if an expression is variable.
 (define (variable? expr)
-  (cond
-    [(and (symbol? expr)
-          (not (equal? expr '+))
-          (not (equal? expr '*))) #t]
-    [else #f]))
+  (and (symbol? expr)
+       (not (equal? expr '+))
+       (not (equal? expr '*))
+       (not (equal? expr '^))
+       (not (equal? expr 'sin))
+       (not (equal? expr 'cos))
+       (not (equal? expr 'log))
+       (not (equal? expr 'tan))))
 
 ; sum? - a predicate that checks if an expression is sum.
 (define (sum? expr)
-  (cond
-    [(second-element? expr) (equal? '+ (first expr))]
-    [else #f]))
+  (and (second-element? expr) (acceptable-values? expr) (equal? '+ (first expr))))
 
 ; summand-1 - a function that return first summand of the expression.
 (define (summand-1 expr)
@@ -39,14 +68,12 @@
 ; summand-2 - a function that return second summand of the expression.
 (define (summand-2 expr)
   (cond
-    [(and (sum? expr) (>= (length expr) 3)) (third expr)]
+    [(and (sum? expr) (third-element? expr)) (third expr)]
     [else (error "Expected a sum expression of the form '(+ <expr> <expr> ...), but got: " expr)]))
 
 ; product? - a predicate that checks if an expression is product.
 (define (product? expr)
-  (cond
-    [(second-element? expr) (and (equal? '* (first expr)) (>= (length expr) 3))]
-    [else #f]))
+  (and (second-element? expr) (acceptable-values? expr) (equal? '* (first expr))))
 
 ; multiplier-1 - a function that return first multiplier of the expression.
 (define (multiplier-1 expr)
@@ -57,15 +84,12 @@
 ; multiplier-2 - a function that return second multiplier of the expression.
 (define (multiplier-2 expr)
   (cond
-    [(and (product? expr) (>= (length expr) 3)) (third expr)]
+    [(and (product? expr) (third-element? expr)) (third expr)]
     [else (error "Expected a product expression of the form '(* <expr> <expr> ...), but got: " expr)]))
 
 
 ; ********************************************        SUBTASK 2        ******************************************************************************
 ; ***********************      !!! The complete derivative function is represented in SUBTASK 7      ************************************************
-
-; DESCRIPTION
-; Here you can see the solution for only 2 functions (sum and product) and 2 arguments accepted by this functions.
 
 ; unit? - a predicate that checks if an expression is variable or number.
 (define (unit? val)
@@ -93,23 +117,57 @@
                                  (derivative-old (multiplier-2 expr) resp)))]
     [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
+
 ; ********************************************        SUBTASK 3        ******************************************************************************
-(define (simplify-root-sum a b)
+; ***********************      !!! The simplify function is represented in SUBTASK 7      ***********************************************************
+
+; leaf? - a predicate that checks if an expression is leaf and only consists of numbers or variables.
+(define (leaf? expr)
+  (andmap (lambda (x) (unit? x)) (rest expr)))
+
+; combiner - a function that combines symbol and variables to expression or to a single variable.
+(define (combiner args symbol)
+    (cond
+      [(equal? (length args) 1) (first args)]
+      [else (cons symbol args)]))
+
+; combine-nums - a function that combines numbers of the expression expr to a list with one number or to an empty list.
+(define (combine-nums expr)
   (cond
-    [(and (number? a) (number? b)) (+ a b)]
-    [(equal? a 0) b]
-    [(equal? b 0) a]
-    [(and (unit? a) (unit? b)) (list '+ a b)]
-    [else (error "Error simplify-root-sum")]))
+    [(empty? (filter number? (rest expr))) empty]
+    [(sum? expr) (list (apply + (filter number? (rest expr))))]
+    [(product? expr) (list (apply * (filter number? (rest expr))))]
+    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]))
+
+; get-vars - a function that gets all arguments of expression except numbers.
+(define (get-vars expr)
+  (cond
+    [(or (sum? expr) (product? expr)) (filter (lambda (x) (not (number? x))) (rest expr))]
+    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]))
+
+; simplify-at-root - a function that simplifies expression only with numbers and variables.
+(define (simplify-at-root expr)
+  (cond
+    [(and (not (or (sum? expr) (product? expr))) (math-func? expr))
+     expr]
+    [(not (or (sum? expr) (product? expr)))
+     (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
+    [else ((lambda (nums vars) (cond
+                                 [(empty? nums)(combiner vars (first expr))]
+                                 [(empty? vars) (first nums)]
+                                 [(equal? (first nums) 0)
+                                  (cond
+                                    [(sum? expr) (combiner vars (first expr))]
+                                    [(product? expr) 0])]
+                                 [(and (equal? (first nums) 1) (product? expr)) (combiner vars (first expr))]
+                                 [else (cons (first expr)(append nums vars))]))
+           (combine-nums expr)
+           (get-vars expr))]))
+
 
 ; ********************************************        SUBTASK 5        ******************************************************************************
 
-; DESCRIPTION
-; Here you can see the to-infix function.
-; I made this function in such way that it works for exponentiation from SUBTASK 6 and for unlimited number of arguments.
-
-; infix-add-symbol - a function that is part of to-infix function.
-; This function implements the insertion of an operation symbols between the arguments of expressions.
+; infix-add-symbol - a function that implements the insertion of an operation symbols between the arguments of expressions.
 (define (infix-add-symbol expr symbol)
   (define (helper)
     (foldl (lambda (x current)
@@ -136,49 +194,35 @@
 ; ********************************************        SUBTASK 6        ******************************************************************************
 ; ***********************      !!! The complete derivative and simplify functions are represented in SUBTASK 7      ************************************************
 
-; DESCRIPTION
-; In this SUBTASK I made helper functions for later use in SUBTASK 7
-; This functions are necessary to implement derivatives of exponentiation, cos, sin, tan, and log. 
-
 ; exp? - a predicate that checks if an expression is exponentiation.
 (define (exp? expr)
   (cond
-    [(first-element? expr) (and (equal? '^ (first expr)) (equal? (length expr) 3))]
+    [(and (equal? (length expr) 3) (acceptable-values? expr)) (equal? '^ (first expr))]
     [else #f]))
 
 ; sin? - a predicate that checks if an expression is sin.
 (define (sin? expr)
   (cond
-    [(first-element? expr) (and (equal? 'sin (first expr)) (equal? (length expr) 2))]
+    [(and (equal? (length expr) 2) (acceptable-values? expr)) (equal? 'sin (first expr))]
     [else #f]))
 
 ; cos? - a predicate that checks if an expression is cos.
 (define (cos? expr)
   (cond
-    [(first-element? expr) (and (equal? 'cos (first expr)) (equal? (length expr) 2))]
+    [(and (equal? (length expr) 2) (acceptable-values? expr)) (equal? 'cos (first expr))]
     [else #f]))
 
 ; tan? - a predicate that checks if an expression is tan.
 (define (tan? expr)
   (cond
-    [(first-element? expr) (and (equal? 'tan (first expr)) (equal? (length expr) 2))]
+    [(and (equal? (length expr) 2) (acceptable-values? expr)) (equal? 'tan (first expr))]
     [else #f]))
 
 ; log? - a predicate that checks if an expression is log.
 (define (log? expr)
   (cond
-    [(first-element? expr) (and (equal? 'log (first expr)) (equal? (length expr) 2))]
+    [(and (equal? (length expr) 2) (acceptable-values? expr)) (equal? 'log (first expr))]
     [else #f]))
-
-; math-func? - a predicate that checks if an expression is sum, product, exponentiation, cos, sin, tan, or log.
-(define (math-func? expr)
-  (or (exp? expr)
-      (sin? expr)
-      (cos? expr)
-      (tan? expr)
-      (log? expr)
-      (sum? expr)
-      (product? expr)))
 
 ; log-derivative - a function that calculates a derivative for log using derivative function.
 (define (log-derivative expr resp)
@@ -209,6 +253,7 @@
   (cond
     [(tan? expr) (list '* (list '^ (list 'cos (second expr)) -2)(derivative (second expr) resp))]
     [else (error "Expected a tan expression of the form '(tan <expr>), but got: " expr)]))
+
 
 ; ********************************************        SUBTASK 7        ******************************************************************************
 
@@ -249,54 +294,12 @@
     [(log? expr) (log-derivative expr resp)]
     [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: " expr)]))
 
-(define (root? expr)
-  (andmap (lambda (x) (unit? x)) (rest expr)))
-
-(define (combiner args symbol)
-    (cond
-      [(equal? (length args) 1) (first args)]
-      [else (cons symbol args)]))
-
-(define (combine-nums expr)
-  (cond
-    [(not (or (sum? expr) (product? expr))) (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
-    [(empty? (filter number? (rest expr))) empty]
-    [(sum? expr) (list (apply + (filter number? (rest expr))))]
-    [(product? expr) (list (apply * (filter number? (rest expr))))]))
-
-(define (get-vars expr)
-  (cond
-    [(or (sum? expr) (product? expr)) (filter (lambda (x) (not (number? x))) (rest expr))]
-    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]))
-
-(define (simplify-at-root expr)
-  ((lambda (nums vars) (cond
-                         [(not (or (sum? expr) (product? expr))) (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
-                         [(empty? nums)(combiner vars (first expr))]
-                         [(empty? vars) (first nums)]
-                         [(equal? (first nums) 0)
-                          (cond
-                            [(sum? expr) (combiner vars (first expr))]
-                            [(product? expr) 0])]
-                         [(and (equal? (first nums) 1) (product? expr)) (combiner vars (first expr))]
-                         [else (cons (first expr)(append nums vars))]))
-   (combine-nums expr)
-   (get-vars expr)))
-
-
-
-(simplify-at-root '(* 1 x y z))
-(simplify-at-root '(* 1 2))
-(simplify-at-root '(* x y z))
-(simplify-at-root '(* 1 2 3 x y z))
-(simplify-at-root '(* 1 x))
-(simplify-at-root '(* 1 2 3 x y z 0))
-(simplify-at-root '(+ 1 x y z))
-(simplify-at-root '(+ 1 2))
-(simplify-at-root '(+ x y z))
-(simplify-at-root '(+ 1 2 3 x y z))
-(simplify-at-root '(+ 1 x))
-(simplify-at-root '(+ 0 0 0 x y z 0))
-
+; simplify - a recursive function that simplifies given expression.
 (define (simplify expr)
-  (simplify-at-root (map simplify-at-root (rest expr))))
+  (cond
+    [(unit? expr) expr]
+    [(math-func? expr)
+     (cond
+       [(leaf? expr) (simplify-at-root expr)]
+       [else (simplify-at-root (cons (first expr)(map simplify (rest expr))))])]
+    [else (error "Expected an available expression or a value, but got: " expr)]))
