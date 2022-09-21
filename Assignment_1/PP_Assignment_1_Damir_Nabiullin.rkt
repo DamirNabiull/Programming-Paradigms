@@ -525,30 +525,32 @@
 ; insert - a recursive function that represents insertion sort (insert val to ans).
 (define (insert val ans)
   (cond
-    [(list? val)
-     (foldl insert
-            ans
-            (rest val))]
-    [(variable? val)
+    [(acceptable-value? val)
      (cond
-       [(empty? ans) (list val)]
-       [(ormap (lambda (x)
-                 (equal? val x))
-               ans)
-        ans]
-       [(symbol<? val
-                  (first ans))
-        (cons val ans)]
-       [else (cons (first ans)
-                   (insert val
-                           (rest ans)))])]
-    [(acceptable-value? val) ans]
-    [(error "Unexpected expression: "
-            val)]))
+       [(list? val)
+        (foldl insert
+               ans
+               (rest val))]
+       [(variable? val)
+        (cond
+          [(empty? ans) (list val)]
+          [(ormap (lambda (x)
+                    (equal? val x))
+                  ans)
+           ans]
+          [(symbol<? val
+                     (first ans))
+           (cons val ans)]
+          [else (cons (first ans)
+                      (insert val
+                              (rest ans)))])]
+       [else ans])]))
 
 ; variables-of - a function that returns sorted list of distinct variables used in a given expression.
 (define (variables-of expr)
-  (foldl insert empty (rest expr)))
+  (cond
+    [(acceptable-value? expr)
+     (foldl insert empty (rest expr))]))
 
 
 ; ********************************************        SUBTASK 9        ******************************************************************************
