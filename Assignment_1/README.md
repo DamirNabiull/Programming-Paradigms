@@ -89,6 +89,7 @@
 1. **(combine-nums \<expr\>) -> list?**
    - A function that combines numbers of the expression *expr* to a list with one number or to an empty list.
    - I used a filter to get list of numbers used in the expression and to apply operation of sum or product to them.
+   - This function returns empty list or list with one number. I made it in such case because we need to recognize if there is no numbers.
    - Works only with sum and product.
 1. **(get-vars \<expr\>) -> list?**
    - A function that gets all arguments of expression except numbers.

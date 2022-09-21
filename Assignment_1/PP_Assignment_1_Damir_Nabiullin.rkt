@@ -177,13 +177,22 @@
 
 ; leaf? - a predicate that checks if an expression is leaf and only consists of numbers or variables.
 (define (leaf? expr)
-  (andmap (lambda (x)
-            (unit? x))
-          (rest expr)))
+  (cond
+    [(list? expr)
+     (andmap (lambda (x)
+               (unit? x))
+             (rest expr))]
+    [else
+     (error "Expected a list, but got: "
+            expr)]))
 
 ; combiner - a function that combines symbol and variables to expression or to a single variable.
 (define (combiner args symbol)
   (cond
+    [(not (list? args))
+     (error "Expected a list, but got: "
+            args)]
+    [(empty? args) args]
     [(equal? (length args)
              1)
      (first args)]
@@ -258,7 +267,7 @@
 
 ; ********************************************        SUBTASK 5        ******************************************************************************
 
-; infix-add-symbol - a function that implements the insertion of an operation symbols between the arguments of expressions.
+; infix-add-symbol - a function that implements the insertion of an operation symbols between the arguments of expressions. Works with +, *, and ^.
 (define (infix-add-symbol expr symbol)
   (define (helper)
     (foldl (lambda (x current)
@@ -283,15 +292,15 @@
     [(exp? expr)
      (infix-add-symbol expr
                        '^)]
-    [(math-func? expr) expr]
     [(sum? expr)
      (infix-add-symbol expr
                        '+)]
     [(product? expr)
      (infix-add-symbol expr
                        '*)]
+    [(math-func? expr) expr]
     [else
-     (error "Expected a sum or a product expression of the form '(+ <expr> <expr> ...) or '(* <expr> <expr> ...) respectively, but got: "
+     (error "Expected [a sum] or [a product] or [an exponentiation] expression of the form '(+ <expr> <expr> ...) or '(* <expr> <expr> ...) or '(^ <expr> <expr>) respectively, but got: "
             expr)]))
 
 
@@ -516,9 +525,10 @@
 ; insert - a recursive function that represents insertion sort (insert val to ans).
 (define (insert val ans)
   (cond
-    [(list? val) (foldl insert
-                        ans
-                        val)]
+    [(list? val)
+     (foldl insert
+            ans
+            (rest val))]
     [(variable? val)
      (cond
        [(empty? ans) (list val)]
@@ -532,11 +542,13 @@
        [else (cons (first ans)
                    (insert val
                            (rest ans)))])]
-    [else ans]))
+    [(acceptable-value? val) ans]
+    [(error "Unexpected expression: "
+            val)]))
 
 ; variables-of - a function that returns sorted list of distinct variables used in a given expression.
 (define (variables-of expr)
-  (foldl insert empty expr))
+  (foldl insert empty (rest expr)))
 
 
 ; ********************************************        SUBTASK 9        ******************************************************************************
