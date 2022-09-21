@@ -1,5 +1,5 @@
 #lang slideshow
-; Damir Nabiullin 20.09.2022
+; Damir Nabiullin 21.09.2022
 
 ; HELPERS
 
@@ -84,8 +84,9 @@
 (define (summand-1 expr)
   (cond
     [(sum? expr) (second expr)]
-    [else (error "Expected a sum expression of the form '(+ <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a sum expression of the form '(+ <expr> ...), but got: "
+            expr)]))
 
 ; summand-2 - a function that return second summand of the expression.
 (define (summand-2 expr)
@@ -93,8 +94,9 @@
     [(and (sum? expr)
           (third-element? expr))
      (third expr)]
-    [else (error "Expected a sum expression of the form'(+ <expr> <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a sum expression of the form'(+ <expr> <expr> ...), but got: "
+            expr)]))
 
 ; product? - a predicate that checks if an expression is product.
 (define (product? expr)
@@ -106,8 +108,9 @@
 (define (multiplier-1 expr)
   (cond
     [(product? expr) (second expr)]
-    [else (error "Expected a product expression of the form '(* <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a product expression of the form '(* <expr> ...), but got: "
+            expr)]))
 
 ; multiplier-2 - a function that return second multiplier of the expression.
 (define (multiplier-2 expr)
@@ -115,8 +118,9 @@
     [(and (product? expr)
           (third-element? expr))
      (third expr)]
-    [else (error "Expected a product expression of the form '(* <expr> <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a product expression of the form '(* <expr> <expr> ...), but got: "
+            expr)]))
 
 
 ; ********************************************        SUBTASK 2        ******************************************************************************
@@ -134,32 +138,38 @@
           (equal? val resp))
      1]
     [(unit? val) 0]
-    [else (error "Expected an unit (a variable or a number), but got: "
-                 val)]))
+    [else
+     (error "Expected an unit (a variable or a number), but got: "
+            val)]))
 
 ; derivative-old - a recursive function that computes a symbolic derivative of a given expression with respect to a given variable.
 (define (derivative-old expr resp)
   (cond
-    [(not (variable? resp)) (error "Expected that derivative computes with respect to variable, but got: "
-                                   resp)]
-    [(unit? expr) (unit-derivative expr
-                                   resp)]
-    [(sum? expr) (list '+
-                       (derivative-old (summand-1 expr)
-                                       resp)
-                       (derivative-old (summand-2 expr)
-                                       resp))]
-    [(product? expr) (list '+
-                           (list '*
-                                 (derivative-old (multiplier-1 expr)
-                                                 resp)
-                                 (multiplier-2 expr))
-                           (list '*
-                                 (multiplier-1 expr)
-                                 (derivative-old (multiplier-2 expr)
-                                                 resp)))]
-    [else (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: "
-                 expr)]))
+    [(not (variable? resp))
+     (error "Expected that derivative computes with respect to variable, but got: "
+            resp)]
+    [(unit? expr)
+     (unit-derivative expr
+                      resp)]
+    [(sum? expr)
+     (list '+
+           (derivative-old (summand-1 expr)
+                           resp)
+           (derivative-old (summand-2 expr)
+                           resp))]
+    [(product? expr)
+     (list '+
+           (list '*
+                 (derivative-old (multiplier-1 expr)
+                                 resp)
+                 (multiplier-2 expr))
+           (list '*
+                 (multiplier-1 expr)
+                 (derivative-old (multiplier-2 expr)
+                                 resp)))]
+    [else
+     (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: "
+            expr)]))
 
 
 ; ********************************************        SUBTASK 3        ******************************************************************************
@@ -194,8 +204,9 @@
      (list (apply *
                   (filter number?
                           (rest expr))))]
-    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: "
+            expr)]))
 
 ; get-vars - a function that gets all arguments of expression except numbers.
 (define (get-vars expr)
@@ -205,8 +216,9 @@
      (filter (lambda (x)
                (not (number? x)))
              (rest expr))]
-    [else (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: "
-                 expr)]))
+    [else
+     (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: "
+            expr)]))
 
 ; simplify-at-root - a function that simplifies expression only with numbers and variables.
 (define (simplify-at-root expr)
@@ -217,16 +229,19 @@
      expr]
     [(not (or (sum? expr)
               (product? expr)))
-     (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: " expr)]
+     (error "Expected a sum or product expression of the form '(<operation> <expr> ...), but got: "
+            expr)]
     [else ((lambda (nums vars)
              (cond
-               [(empty? nums)(combiner vars
-                                       (first expr))]
+               [(empty? nums)
+                (combiner vars
+                          (first expr))]
                [(empty? vars) (first nums)]
                [(equal? (first nums) 0)
                 (cond
-                  [(sum? expr) (combiner vars
-                                         (first expr))]
+                  [(sum? expr)
+                   (combiner vars
+                             (first expr))]
                   [(product? expr) 0])]
                [(and (equal? (first nums)
                              1)
@@ -414,15 +429,16 @@
   (define (helper prev expr ans)
     (cond
       [(empty? expr) (cons '+ ans)]
-      [else (helper (append prev
-                            (list (first expr)))
-                    (rest expr)
-                    (append ans
-                            (list (append (cons '*
-                                                prev)
-                                          (append (list (derivative (first expr)
-                                                                    resp))
-                                                  (rest expr))))))]))
+      [else
+       (helper (append prev
+                       (list (first expr)))
+               (rest expr)
+               (append ans
+                       (list (append (cons '*
+                                           prev)
+                                     (append (list (derivative (first expr)
+                                                               resp))
+                                             (rest expr))))))]))
   (cond
     [(product? expr)
      (helper empty
@@ -450,22 +466,30 @@
     [(not (variable? resp))
      (error "Expected that derivative computes with respect to variable, but got: "
             resp)]
-    [(unit? expr) (unit-derivative expr
-                                   resp)]
-    [(sum? expr) (convert-sum expr
-                              resp)]
-    [(product? expr) (convert-multiplication expr
-                                             resp)]
-    [(exp? expr) (exp-derivative expr
-                                 resp)]
-    [(sin? expr) (sin-derivative expr
-                                 resp)]
-    [(cos? expr) (cos-derivative expr
-                                 resp)]
-    [(tan? expr) (tan-derivative expr
-                                 resp)]
-    [(log? expr) (log-derivative expr
-                                 resp)]
+    [(unit? expr)
+     (unit-derivative expr
+                      resp)]
+    [(sum? expr)
+     (convert-sum expr
+                  resp)]
+    [(product? expr)
+     (convert-multiplication expr
+                             resp)]
+    [(exp? expr)
+     (exp-derivative expr
+                     resp)]
+    [(sin? expr)
+     (sin-derivative expr
+                     resp)]
+    [(cos? expr)
+     (cos-derivative expr
+                     resp)]
+    [(tan? expr)
+     (tan-derivative expr
+                     resp)]
+    [(log? expr)
+     (log-derivative expr
+                     resp)]
     [else
      (error "Expected an expression of the form '(<operation> <expr> <expr> ...) or <variable> or <number>, but got: "
             expr)]))
