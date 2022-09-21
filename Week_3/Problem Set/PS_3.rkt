@@ -99,6 +99,7 @@
               (cons empty 1)
               encoded)))
 
+
 ; _____ Task 2 _____
 
 (define employees
@@ -108,6 +109,82 @@
     ("Anna" "Karenina" . 40)))
 
 ; _____ A
+
 (define (fullname employee)
-  (cons (car (first employees))
-        (car (cdr (first employees)))))
+  (cons (car employee)
+        (car (cdr employee))))
+
+(fullname (second employees))
+
+; _____ B
+
+(define (get-all-by-name employees-list name)
+  (foldl (lambda (employee ans)
+           (cond
+             [(equal? (car employee)
+                      name)
+              (append ans
+                      (list employee))]
+             [else ans]))
+         empty
+         employees-list))
+
+(get-all-by-name employees "Anna")
+
+; _____ C
+
+(define (employees-over-25 employees-list)
+  (foldl (lambda (employee ans)
+           (cond
+             [(> (cdr (cdr employee))
+                 25)
+              (append ans
+                      (list (fullname employee)))]
+             [else ans]))
+         empty
+         employees-list))
+
+(employees-over-25 employees)
+
+
+; _____ Task 3 _____
+
+(define (remove-odd values)
+  (filter even? values))
+
+(define (sum-even values)
+  (cond
+    [(empty? values) 0]
+    [(even? (first values))
+     (+ (first values) (sum-even (rest values)))]
+    [else
+     (sum-even (rest values))]))
+
+; _____ Proof
+
+; (apply + (remove-odd (cons x xs)))
+
+; = (apply + (filter even? (cons x xs)))                        by definition of remove-odd
+
+; = (apply + (cond                                              by definition of filter
+;                [(even? x) (cons x (filter even? xs))]
+;                [else (filter even? xs)]))
+
+; = (cond                                                       by defenition of condition
+;       [(even? x) (apply + (cons x (filter even? xs)))]
+;       [else (apply + (filter even? xs))])
+
+; = (cond                                                       by defenition of apply
+;       [(even? x) (+ x (apply + (filter even? xs)))]
+;       [else (apply + (filter even? xs))])
+
+; = (cond                                                       by definition of remove-odd (inverted)
+;       [(even? x) (+ x (apply + (remove-odd xs)))]
+;       [else (apply + (remove-odd xs))])
+
+; = (cond                                                       by inductive hypothesis
+;       [(even? x) (+ x (sum-even xs))]
+;       [else (sum-even xs)])
+
+; = (sum-even (cons x xs))                                      by definition of sum-even (inverted)
+
