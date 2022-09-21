@@ -26,6 +26,7 @@
 
 *SUBTASK 6*:
    - In this part I implemented all functions for task 1.6.
+   - *log* function works as natural logarithm.
    - In this subtask I made helper functions for later use in subtask 7.
    - This functions are necessary to implement derivatives of exponentiation, cos, sin, tan, and log.
    - Descriptions of all functions in sections below.
