@@ -31,7 +31,9 @@
     [else pair]))
 
 (define (remove-leading-zeros bits)
-  (car (foldl add-if-flag (cons empty #f) bits)))
+  (car (foldl add-if-flag
+              (cons empty #f)
+              bits)))
 
 (remove-leading-zeros '(0 0 0 1 0 1 1 0))
 
@@ -43,7 +45,9 @@
     [else cur]))
 
 (define (count-zeros bits)
-  (foldl inc-if-zero 0 (remove-leading-zeros bits)))
+  (foldl inc-if-zero
+         0
+         (remove-leading-zeros bits)))
 
 (count-zeros '(0 0 0 1 0 1 1 0))
 
@@ -51,12 +55,23 @@
 
 (define (combine x pair)
   (cond
-    [(empty? (cdr pair)) (cons (list (list x)) (list x))]
-    [(equal? (car (cdr pair)) x) (cons (append (list (append (list x) (first (car pair)))) (rest (car pair))) (list x))]
-    [else (cons (append (list (list x)) (car pair)) (list x))]))
+    [(empty? (cdr pair))
+     (cons (list (list x))
+           (list x))]
+    [(equal? (car (cdr pair)) x)
+     (cons (append (list (append (list x)
+                                 (first (car pair))))
+                   (rest (car pair)))
+           (list x))]
+    [else (cons (append (list (list x))
+                        (car pair))
+                (list x))]))
 
 (define (group-consecutive bits)
-  (reverse (car (foldl combine (cons empty empty) bits))))
+  (reverse (car (foldl combine
+                       (cons empty
+                             empty)
+                       bits))))
 
 (group-consecutive '(0 0 0 1 0 1 1 0))
 
@@ -66,17 +81,23 @@
   (map length
        (group-consecutive (remove-leading-zeros bits))))
 
+(encode-with-lengths '(0 0 0 1 1 0 1 1 1 0 0))
+
 ; _____ F
 
 (define (list-of-n x pair)
   (cons (append (car pair)
-                (map (lambda (x) (cdr pair)) (range x)))
+                (map (lambda (x)
+                       (cdr pair))
+                     (range x)))
         (cond
           [(equal? (cdr pair) 1) 0]
           [else 1])))
 
 (define (decode-with-lengths encoded)
-  (car (foldl list-of-n (cons empty 1) encoded)))
+  (car (foldl list-of-n
+              (cons empty 1)
+              encoded)))
 
 ; _____ Task 2 _____
 
