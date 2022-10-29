@@ -84,7 +84,7 @@ insertIter x (y:ys)
 -- TASK 6
 
 insertionSortIter :: [Int] -> Iter [Int]
-insertionSortIter lst = go lst (Done [])
+insertionSortIter lst = go (reverse lst) (Done [])
     where
         go [] sorted = sorted
         go lst (Step x) = Step (go lst x)
