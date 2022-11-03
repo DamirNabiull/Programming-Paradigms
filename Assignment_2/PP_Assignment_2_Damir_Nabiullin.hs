@@ -22,7 +22,9 @@ integers = Line [-1, -2..] 0 [1, 2..]
 
 -- SUBTASK 1.1
 
--- | Keep up to a given number of elements in each direction in a line.
+{- | Keep up to a given number of elements in each direction in a line.
+   using take function create new line of n elements from left and right
+-}
 cutLine :: Int -> Line a -> Line a
 cutLine n (Line xs y zs) = Line (take n xs) y (take n zs)
 
@@ -50,7 +52,10 @@ genLine f x g = Line (generate f x) x (generate g x)
 
 -- SUBTASK 1.3
 
--- | Apply a function to all elements on a line.
+{- | Apply a function to all elements on a line.
+   map through left and right parts of line and 
+   apply function to each element of line
+-}
 mapLine :: (a -> b) -> Line a -> Line b
 mapLine f (Line xs y zs) = Line left center right
     where
@@ -60,7 +65,10 @@ mapLine f (Line xs y zs) = Line left center right
 
 -- SUBTASK 1.4
 
--- | Zip together two lines.
+{- | Zip together two lines.
+   zips left and right parts of line using zip
+   and make focus as tupple of focus of both lines
+-}
 zipLines :: Line a -> Line b -> Line (a, b)
 zipLines (Line xs y zs) (Line xs' y' zs') = Line left center right
     where
@@ -68,7 +76,10 @@ zipLines (Line xs y zs) (Line xs' y' zs') = Line left center right
         center = (y, y')
         right  = zip zs zs'
 
--- | Zip together two lines with a given combining function.
+{- | Zip together two lines with a given combining function.
+    zips left and right parts of line using zipWith
+   and make focus as result of applied function to focus of both lines
+-}
 zipLinesWith :: (a -> b -> c) -> Line a -> Line b -> Line c
 zipLinesWith f (Line xs y zs) (Line xs' y' zs') = Line left center right
     where
@@ -111,27 +122,30 @@ rule30 (Line (a:_) b (c:_)) = case (a, b, c) of
 
 -- SUBTASK 1.6
 
--- | Shift Line to left.
+-- | Shift focus of line to left.
 forceShiftLeft :: Line a -> Line a
 forceShiftLeft (Line (x:xs) y zs) = Line xs x (y:zs)
 
--- | Shift Line to left if possible.
+-- | Shift focus of line to left if possible.
 shiftLeft :: Line a -> Maybe (Line a)
 shiftLeft (Line [] _ _) = Nothing
 shiftLeft line          = Just (forceShiftLeft line)
 
--- | Shift Line to right.
+-- | Shift focus of line to right.
 forceShiftRight :: Line a -> Line a
 forceShiftRight (Line xs y (z:zs)) = Line (y:xs) z zs
 
--- | Shift Line to right if possible.
+-- | Shift focus of line to right if possible.
 shiftRight :: Line a -> Maybe (Line a)
 shiftRight (Line _ _ []) = Nothing
 shiftRight line          = Just (forceShiftRight line)
 
 -- SUBTASK 1.7
 
--- | Maps line to all possible focus shifts.
+{- | Maps line to all possible focus shifts.
+   Creates line of all possible shifts of line
+   by generating new line with shifted focus
+-}
 lineShifts :: Line a -> Line (Line a)
 lineShifts l = genLine shiftLeft l shiftRight
 
@@ -141,7 +155,10 @@ applyRule30 line = mapLine rule30 (lineShifts line)
 
 -- SUBTASK 1.8
 
--- | Renders picture from list of pictures with given padding.
+{- | Renders picture from list of pictures with given padding.
+   Combine each picture inside list with previous pictures
+   and translate next picture on horizontal axis by padding
+-}
 renderPart :: [Picture] -> Double -> Picture
 renderPart []     _ = blank
 renderPart (x:xs) y = first <> other
@@ -168,12 +185,17 @@ sampleLine = Line [a,b,c,d,e,f,g] c [g,d,b,c,a,f]
     f = colored brown (solidCircle 0.5)
     g = colored pink (solidCircle 0.5)
 
--- | Render cell as rectangle.
+{- | Render cell as 1x1 rectangle.
+   Alive = black rectangle, Dead = white rectangle
+-}
 renderCell :: Cell -> Picture
 renderCell Alive = solidRectangle  1 1
 renderCell Dead  = rectangle  1 1
 
--- | Create line of pictures from line of cells.
+{- | Create line of pictures from line of cells.
+   Goes through each part of line and render each cell
+   using renderCell function
+-}
 renderLineCells :: Line Cell -> Line Picture
 renderLineCells (Line xs y zs) = Line left center right
   where
@@ -181,8 +203,14 @@ renderLineCells (Line xs y zs) = Line left center right
     center = renderCell y
     right  = map renderCell zs
 
--- | Render the fist N steps of Rule 30,
--- applied to a given starting line.
+{- | Render the fist N steps of Rule 30,
+   applied to a given starting line.
+   It renders each line of cells as a line of pictures
+   using renderLineCells function
+   and then render all lines of pictures
+   using renderLine function.
+   Translates each new line on vertical axis by padding.
+-}
 renderRule30 :: Int -> Line Cell -> Picture
 renderRule30 0 _    = blank
 renderRule30 n line = first <> other
@@ -195,26 +223,33 @@ renderRule30 n line = first <> other
 -- *****************************************************************************************
 -- TASK 3
 
--- | A descrete 2D space with a focus.
--- A 2D space is merely a (vertical) line
--- where each element is a (horizontal) line.
+{- | A descrete 2D space with a focus.
+   A 2D space is merely a (vertical) line
+   where each element is a (horizontal) line.
+-}
 data Space a = Space (Line (Line a))
     deriving (Show) 
     
 -- SUBTASK 1.9
 
--- | Create a space from a list of lines.
+-- | Create a space from a lines elements.
 makeSpace :: [Line a] -> Line a -> [Line a] -> Space a
 makeSpace xs y zs = Space (Line xs y zs)
 
--- | Get line of all possible combinations of value and line. 
+{- | Get line of all possible combinations of value and line. 
+   Zips value with each line element and creates new line
+-}
 getCombinations :: Line a -> b -> Line (b, a)
 getCombinations (Line xs y zs) b = Line left (b, y) right
     where
         left  = zip (repeat b) xs
         right = zip (repeat b) zs
 
--- | Generate a space by using generating functions.
+{- | Generate a space by using generating functions.
+   Create space from two given lines according
+   to multiplication rule of cartesian product
+   represented as getCombinations function.
+-}
 productOfLines :: Line a -> Line b -> Space (a, b)
 productOfLines (Line xs y zs) line = makeSpace left center right
     where
@@ -224,7 +259,10 @@ productOfLines (Line xs y zs) line = makeSpace left center right
 
 -- SUBTASK 1.10
 
--- | Apply a function to all elements on a space
+{- | Apply a function to all elements on a space
+   Maps through each line of space, then
+   maps through each line of line and applies function
+-}
 mapSpace :: (a -> b) -> Space a -> Space b
 mapSpace f (Space (Line xs y zs)) = makeSpace left center right
     where
@@ -232,7 +270,10 @@ mapSpace f (Space (Line xs y zs)) = makeSpace left center right
         center = mapLine f y
         right  = map (mapLine f) zs
 
--- | Zip together two spaces.
+{- | Zip together two spaces.
+   Zips each line of space with each line of other space
+   and creates new space.
+-}
 zipSpaces :: Space a -> Space b -> Space (a, b)
 zipSpaces (Space (Line xs y zs)) (Space (Line xs' y' zs')) 
     = makeSpace left center right
@@ -241,7 +282,10 @@ zipSpaces (Space (Line xs y zs)) (Space (Line xs' y' zs'))
         center = zipLines y y'
         right  = zipWith zipLines zs zs'
 
--- | Zip together two spaces with a given combining function.
+{- | Zip together two spaces with a given combining function.
+   Zips each line of space with each line of other space
+   usinf given function and creates new space.
+-}
 zipSpacesWith :: (a -> b -> c) -> Space a -> Space b -> Space c
 zipSpacesWith f (Space (Line xs y zs)) (Space (Line xs' y' zs')) 
     = makeSpace left center right
@@ -259,7 +303,11 @@ zipSpacesWith f (Space (Line xs y zs)) (Space (Line xs' y' zs'))
 
 -- SUBTASK 1.12
 
--- | Calculates all alive neighbours of foci.
+{- | Calculates all alive neighbours of foci.
+   Gets all neighbours of foci and counts
+   how many of them are alive using tryCountLine
+   and tryCountCell function.
+-}
 calculateAliveNeighbours :: Line (Line Cell) -> Int
 calculateAliveNeighbours (Line xs (Line left _ right) zs) = 
     tryCountLine xs
@@ -286,7 +334,10 @@ countCell :: Cell -> Int
 countCell Alive = 1
 countCell _     = 0
 
--- | Calculates the next state of foci of space after apllying conway's rule.
+{- | Calculates the next state of foci of space after apllying conway's rule.
+   Calculates alive neighbours of foci and
+   checks conway's rule.
+-}
 conwayRule :: Space Cell -> Cell
 conwayRule (Space (Line xs (Line left center right) zs)) = 
     case calculateAliveNeighbours (Line xs (Line left center right) zs) of
@@ -304,21 +355,30 @@ exampleConwaySpace =
                 [Line [Alive, Dead] Alive [Alive, Dead], 
                  Line [Dead, Dead] Dead [Dead, Dead]])
 
--- | Shift space to the left.
+{- | Shift space to the left.
+   Shifts each line of space to the left
+   using shiftLineLeft function if possible.
+-}
 spaceShiftLeft :: Line (Line a) -> Maybe (Line (Line a))
 spaceShiftLeft (Line xs y zs) =
     case shiftLeft y of
         Nothing -> Nothing
         Just v  -> Just (mapLine forceShiftLeft (Line xs y zs))
 
--- | Shift space to the right.
+{- | Shift space to the right.
+   Shifts each line of space to the right
+   using shiftLineRight function if possible.
+-}
 spaceShiftRight :: Line (Line a) -> Maybe (Line (Line a))
 spaceShiftRight (Line xs y zs) =
     case shiftRight y of
         Nothing -> Nothing
         Just v  -> Just (mapLine forceShiftRight (Line xs y zs))
 
--- | Maps space to all possible focus shifts.
+{- | Maps space to all possible focus shifts.
+   Creates space of all possible shifts of a given space
+   by generating new space with shifted space focus
+-}
 spaceShifts :: Space a -> Space (Space a)
 spaceShifts (Space line) = Space (mapLine spaceShift (lineShifts line))
     where
